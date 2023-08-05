@@ -1,0 +1,9 @@
+.vs/
+ForceMonitor_Release_version*
+./Release
+
+Debug
+Release
+
+./data
+*.csv
