@@ -18,12 +18,14 @@
 #include <QDebug>
 
 #include "ui_ForceMonitorQt.h"
-#include "Plc.h"
+// #include "Plc.h"
+#include "VirtualPlc.h"
 #include "DataLogger.h"
 #include "timer.hpp"
 #include <string>
 
-#define PLOT_STEP 10
+// #define PLOT_STEP 10
+#define PLOT_STEP 100
 #define PLOT_DURATION 15.0
 
 #define ABOUT_PAGE_INFO "\nAbout ForceMonitor, version 1.0.1, 2023\n \
@@ -74,7 +76,8 @@ signals:
 
 private:
     Ui::ForceMonitorQtClass ui;
-    Plc* plc;
+    // Plc* plc;
+    VirtualPlc* plc;
     IPCStatus status;
     QLineSeries* data[3];
 

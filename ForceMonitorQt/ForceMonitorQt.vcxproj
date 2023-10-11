@@ -25,6 +25,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt_defaults.props')">
@@ -93,6 +94,7 @@
   <ItemGroup>
     <ClCompile Include="DataLogger.cpp" />
     <ClCompile Include="Plc.cpp" />
+    <ClCompile Include="VirtualPlc.cpp" />
     <QtRcc Include="ForceMonitorQt.qrc" />
     <QtUic Include="ForceMonitorQt.ui" />
     <QtMoc Include="ForceMonitorQt.h" />
@@ -106,6 +108,7 @@
     <ClInclude Include="Plc.h" />
     <ClInclude Include="RingQueue.hpp" />
     <ClInclude Include="timer.hpp" />
+    <ClInclude Include="VirtualPlc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

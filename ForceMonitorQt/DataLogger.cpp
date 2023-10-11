@@ -6,7 +6,7 @@ DataLogger::DataLogger() {
 
 	string _file = this->log_file_directory + "/" + this->log_file_name;
 	this->fp = fopen(_file.c_str(), "w");
-	fprintf(this->fp, "Force Sensor Record");
+	fprintf(this->fp, "Force Sensor Record\n");
 	fclose(fp);
 }
 
@@ -21,7 +21,7 @@ DataLogger::DataLogger(string directory, string filename) {
 
 	string _file = this->log_file_directory + "/" + this->log_file_name;
 	this->fp = fopen(_file.c_str(), "w");
-	fprintf(this->fp, "Force Sensor Record");
+	fprintf(this->fp, "Force Sensor Record\n");
 	fclose(fp);
 
 }

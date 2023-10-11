@@ -21,7 +21,8 @@ ForceMonitorQt::ForceMonitorQt(QWidget *parent)
     this->temp[1] = this->temp2;
     this->temp[2] = this->temp3;
 
-    this->plc = new Plc();
+    // this->plc = new Plc();
+    this->plc = new VirtualPlc();
 
     this->status = IPCStatus::Offline;
 
@@ -51,6 +52,7 @@ ForceMonitorQt::ForceMonitorQt(QWidget *parent)
     connect(ui.pushButton_4, &QPushButton::clicked, this, &ForceMonitorQt::Stop);
     connect(ui.pushButton_5, &QPushButton::clicked, this, &ForceMonitorQt::SetWorkDirectory);
 
+    // FIXME: Not good practice!
     connect(this, &ForceMonitorQt::updateUi, this, &ForceMonitorQt::updateData);
 
     connect(ui.menuMenu->actions()[0], &QAction::triggered, this, &ForceMonitorQt::Connect);
@@ -61,6 +63,15 @@ ForceMonitorQt::ForceMonitorQt(QWidget *parent)
     connect(ui.menuAbout->actions()[0], &QAction::triggered, this, &ForceMonitorQt::AboutPage);
 
     this->status_vis_label->setText("No PLC connected.");
+
+    /*
+    LOG(INFO) << "temp[0] address: " << this->temp[0] << std::endl;
+    LOG(INFO) << "temp[1] address: " << this->temp[1] << std::endl;
+    LOG(INFO) << "temp[2] address: " << this->temp[2] << std::endl;
+    LOG(INFO) << "QLineSeries: data[0] address: " << this->data[0] << std::endl;
+    LOG(INFO) << "QLineSeries: data[1] address: " << this->data[1] << std::endl;
+    LOG(INFO) << "QLineSeries: data[2] address: " << this->data[2] << std::endl;
+    */
 }
 
 ForceMonitorQt::~ForceMonitorQt()
@@ -282,22 +293,48 @@ void ForceMonitorQt::updateData() {
     this->logData(this->temp, _length);
 
     for (int _channel = 0; _channel < 3; _channel++) {
+		LOG(INFO) << "_length[" << _channel << "] = " << _length[_channel] << std::endl;
+        if (_length[_channel] == 0) {
+            continue;
+        }
+
         for (int i = 0; i < _length[_channel]; i += PLOT_STEP) {
-            std::cout << "_length[" << _channel << "] = " << _length[_channel] << std::endl;
-            this->time_stamp[_channel] += PLOT_STEP;
-            this->data[_channel]->append(double(time_stamp[_channel]) / SAMPLE_RATE, this->temp[_channel][i]);
+            // FIXME: Bug seems to be here.
+            // std::cout << "_length[" << _channel << "] = " << _length[_channel] << std::endl;
+            try {
+				this->time_stamp[_channel] += PLOT_STEP;
+				this->data[_channel]->append(double(time_stamp[_channel]) / SAMPLE_RATE, this->temp[_channel][i]);
+            }
+            catch (exception e) {
+                LOG(WARNING) << "Exception when adding data: " << _channel << "-" << i << std::endl;
+            }
 
             // this->data[_channel]->remove(0);
         }
+        // LOG(INFO) << "here begin" << std::endl;
 
         double _current_time = double(this->time_stamp[_channel]) / (SAMPLE_RATE);
 
         // Remove data out of date
-        while (this->data[_channel]->count() > PLOT_DURATION * SAMPLE_RATE / PLOT_STEP) {
-            this->data[_channel]->remove(0);
+        // LOG(INFO) << "here0" << std::endl;
+        int _rm_len = this->data[_channel]->count() - (PLOT_DURATION * SAMPLE_RATE / PLOT_STEP);
+        if (_rm_len > 0) {
+			this->data[_channel]->removePoints(0, _rm_len);
         }
+        /*
+        while (this->data[_channel]->count() > PLOT_DURATION * SAMPLE_RATE / PLOT_STEP) {
+            try {
+				this->data[_channel]->remove(0);
+            }
+            catch (exception e) {
+                LOG(WARNING) << "Exception when removing data." << std::endl;
+            }
+        }
+        */
 
         // Adjust X Axis range and Y Axis range
+        LOG(INFO) << "Series " << _channel << " length: " << this->data[_channel]->count() << std::endl;
+        // LOG(INFO) << "here1" << std::endl;
         QList<QPointF> _tmp_data = this->data[_channel]->points();
 
         unsigned int _tmp_data_length = _tmp_data.length();
@@ -317,6 +354,7 @@ void ForceMonitorQt::updateData() {
         this->chart[_channel]->axisY()->setMax( ceil((_range_max + 0.10f * _range) / 50) * 50 );
         this->chart[_channel]->axisY()->setMin( floor((_range_min - 0.10f * _range) / 50) * 50 );
 
+        // LOG(INFO) << "here2" << std::endl;
         // Set X Axis
         if (_current_time > PLOT_DURATION) {
 			this->chart[_channel]->axisX()->setMax(_current_time);
@@ -405,6 +443,9 @@ void UpdateData(ForceMonitorQt* app) {
 }
 
 void EmitUpdateSignal(ForceMonitorQt* app) {
+    // FIXME: Warning, updateData is called here
+    // app->updateData();
+
     app->updateUi();
 }
 
