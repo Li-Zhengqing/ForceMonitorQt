@@ -251,11 +251,12 @@ void ForceMonitorQt::initData() {
 
         this->data[_channel]->clear();
         this->data[_channel]->setUseOpenGL(true);
-        for (int i = 0; i < _length[_channel]; i += 10) {
+        // for (int i = 0; i < _length[_channel]; i += 10) {
+        for (int i = 0; i < _length[_channel]; i += PLOT_STEP) {
 			this->data[_channel]->clear();
 
             std::cout << "_length[" << _channel << "] = " << _length[_channel] << std::endl;
-            this->time_stamp[_channel] += 1;
+            this->time_stamp[_channel] += PLOT_STEP;
             this->data[_channel]->append(double(time_stamp[_channel]) / SAMPLE_RATE, this->temp[_channel][i]);
         }
 
