@@ -69,6 +69,12 @@ public:
 
     void InfoWorkDirectory();
 
+    void resetCh1Offset();
+
+    void resetCh2Offset();
+
+    void resetCh3Offset();
+
     void AboutPage();
 
 signals:
@@ -80,6 +86,8 @@ private:
     VirtualPlc* plc;
     IPCStatus status;
     QLineSeries* data[3];
+
+    char selected_variable_grp_id = 0;
 
     unsigned long time_stamp[3] = { 0, 0, 0 };
     PLC_BUFFER_TYPE data_max[3] = { 4000, 4000, 4000 };
@@ -99,6 +107,9 @@ private:
     PLC_BUFFER_TYPE* temp2;
     PLC_BUFFER_TYPE* temp3;
     PLC_BUFFER_TYPE* temp[3];
+
+    PLC_BUFFER_TYPE data_offset_ref[3];
+    int data_offset_reset_flag[3];
 };
 
 bool checkFile(string log_file_directory, string log_file_name);

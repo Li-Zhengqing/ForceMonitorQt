@@ -3,6 +3,13 @@
 VirtualPlc::VirtualPlc() {
 	this->recv_buff = new char[VIRTUAL_PLC_RECV_BUFFER_SIZE];
 	this->tran_buff = new char[VIRTUAL_PLC_TRAN_BUFFER_SIZE];
+
+	for (int _channel = 0; _channel < 3; _channel++) {
+		this->current_raw_data[_channel] = 0;
+		this->data_offset[_channel] = 0;
+	}
+
+	this->selected_variable_grp_id = 0;
 }
 
 VirtualPlc::~VirtualPlc() {
@@ -74,7 +81,9 @@ long VirtualPlc::startPlc() {
 	memset(this->tran_buff, 0, VIRTUAL_PLC_TRAN_BUFFER_SIZE);
 	memset(this->recv_buff, 0, VIRTUAL_PLC_RECV_BUFFER_SIZE);
 	this->tran_buff[0] = PlcServiceCommand::START;
-	send(this->client_sock, tran_buff, 1, 0);
+	this->tran_buff[1] = this->selected_variable_grp_id;
+	// send(this->client_sock, tran_buff, 1, 0);
+	send(this->client_sock, tran_buff, 2, 0);
 	recv(this->client_sock, recv_buff, VIRTUAL_PLC_RECV_BUFFER_SIZE, 0);
 
 	return 0;
@@ -135,8 +144,20 @@ void VirtualPlc::copyDataToClient(PLC_BUFFER_TYPE** dst, unsigned int* ret) {
 	for (int i = 0; i < _data_length; i++) {
 		_channel = (i % 3);
 		_channel_index = (i / 3);
-		dst[_channel][_channel_index] = ((double*)recv_buff)[i];
+		dst[_channel][_channel_index] = ((double*)recv_buff)[i] - this->data_offset[_channel];
+		this->current_raw_data[_channel] = ((double*)recv_buff)[i];
 		ret[_channel] += 1;
 	}
 }
 
+void VirtualPlc::setVariableGroupId(char selected_variable_grp_id) {
+	this->selected_variable_grp_id = selected_variable_grp_id;
+}
+
+void VirtualPlc::resetDataOffset(int* flag, PLC_BUFFER_TYPE* ref_value) {
+	for (int _channel = 0; _channel < 3; _channel++) {
+		if (flag[_channel]) {
+			this->data_offset[_channel] = this->current_raw_data[_channel] - ref_value[_channel];
+		}
+	}
+}

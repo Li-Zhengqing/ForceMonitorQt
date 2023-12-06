@@ -24,6 +24,11 @@ private:
 	SOCKET client_sock;
 	char* recv_buff;
 	char* tran_buff;
+
+    char selected_variable_grp_id;
+
+    PLC_BUFFER_TYPE current_raw_data[3];
+    PLC_BUFFER_TYPE data_offset[3];
 	
 public:
 	VirtualPlc();
@@ -48,4 +53,8 @@ public:
     size_t fetchDataFromPlc(PLC_BUFFER_TYPE* dst);
 
     void copyDataToClient(PLC_BUFFER_TYPE** dst, unsigned int* ret);
+
+    void setVariableGroupId(char selected_varaible_grp_id);
+
+    void resetDataOffset(int* flag, PLC_BUFFER_TYPE* ref_value);
 };

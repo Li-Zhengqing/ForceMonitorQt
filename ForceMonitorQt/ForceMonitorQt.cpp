@@ -4,6 +4,12 @@ void UpdateData(ForceMonitorQt* app);
 
 void EmitUpdateSignal(ForceMonitorQt* app);
 
+/*
+void ResetCh1(ForceMonitorQt* app);
+void ResetCh2(ForceMonitorQt* app);
+void ResetCh3(ForceMonitorQt* app);
+*/
+
 ForceMonitorQt::ForceMonitorQt(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -72,6 +78,23 @@ ForceMonitorQt::ForceMonitorQt(QWidget *parent)
     LOG(INFO) << "QLineSeries: data[1] address: " << this->data[1] << std::endl;
     LOG(INFO) << "QLineSeries: data[2] address: " << this->data[2] << std::endl;
     */
+
+    this->ui.comboBox->addItem(tr("EL3702"));
+    this->ui.comboBox->addItem(tr("EL3356"));
+
+    this->selected_variable_grp_id = this->ui.comboBox->currentIndex();
+
+    this->ui.lineEdit_3->setText("0");
+    this->ui.lineEdit_4->setText("0");
+    this->ui.lineEdit_5->setText("0");
+    for (int _channel = 0; _channel < 3; _channel++) {
+        this->data_offset_reset_flag[_channel] = 0;
+        this->data_offset_ref[_channel] = 0;
+    }
+
+    connect(ui.pushButton_6, &QPushButton::clicked, this, &ForceMonitorQt::resetCh1Offset);
+    connect(ui.pushButton_7, &QPushButton::clicked, this, &ForceMonitorQt::resetCh2Offset);
+    connect(ui.pushButton_8, &QPushButton::clicked, this, &ForceMonitorQt::resetCh3Offset);
 }
 
 ForceMonitorQt::~ForceMonitorQt()
@@ -114,12 +137,16 @@ void ForceMonitorQt::Start() {
 			this->time_stamp[_channel] = 0;
 		}
 
+        this->selected_variable_grp_id = this->ui.comboBox->currentIndex();
+        this->plc->setVariableGroupId(this->selected_variable_grp_id);
 		this->plc->startPlc();
 		// this->timer.start(250, std::bind(UpdateData, this));
 		this->timer.start(500, std::bind(EmitUpdateSignal, this));
 		this->initData();
 
 		this->status_vis_label->setText("Running...");
+
+        this->ui.comboBox->setDisabled(true);
     }
     else if (this->status == IPCStatus::Offline) {
         QMessageBox::critical(this, tr("Not Connected"), tr("No PLC devices is connected, please connect with a PLC first!"), QMessageBox::Ok);
@@ -139,6 +166,8 @@ void ForceMonitorQt::Stop() {
 
 		this->status_vis_label->setText("Connected with PLC, Ready");
         this->InfoWorkDirectory();
+
+        this->ui.comboBox->setEnabled(true);
     }
 }
 
@@ -288,6 +317,74 @@ void ForceMonitorQt::initData() {
 }
 
 void ForceMonitorQt::updateData() {
+	/* Reset offset */
+    for (int _channel = 0; _channel < 3; _channel++) {
+		if (this->data_offset_reset_flag[_channel]) {
+			PLC_BUFFER_TYPE ref_value = 0;
+            bool _is_input_valid = false;
+			try {
+				switch (_channel)
+				{
+				case 0:
+					ref_value = this->ui.lineEdit_3->text().toFloat(&_is_input_valid);
+					break;
+				case 1:
+					ref_value = this->ui.lineEdit_4->text().toFloat(&_is_input_valid);
+					break;
+				case 2:
+					ref_value = this->ui.lineEdit_5->text().toFloat(&_is_input_valid);
+					break;
+				default:
+					break;
+				}
+
+                if (_is_input_valid) {
+					this->data_offset_ref[_channel] = ref_value;
+                }
+                else {
+					this->data_offset_reset_flag[_channel] = 0;
+					switch (_channel)
+					{
+					case 0:
+						this->ui.lineEdit_3->setText(tr("0"));
+						break;
+					case 1:
+						this->ui.lineEdit_4->setText(tr("0"));
+						break;
+					case 2:
+						this->ui.lineEdit_5->setText(tr("0"));
+						break;
+					default:
+						break;
+					}
+                }
+				// this->data_offset_reset_flag[_channel] = 0;
+			}
+			catch (exception e) {
+				// Do nothing
+				this->data_offset_reset_flag[_channel] = 0;
+				switch (_channel)
+				{
+				case 0:
+					this->ui.lineEdit_3->setText(tr("0"));
+					break;
+				case 1:
+					this->ui.lineEdit_4->setText(tr("0"));
+					break;
+				case 2:
+					this->ui.lineEdit_5->setText(tr("0"));
+					break;
+				default:
+					break;
+				}
+			}
+		}
+    }
+    this->plc->resetDataOffset(this->data_offset_reset_flag, this->data_offset_ref);
+    for (int _channel = 0; _channel < 3; _channel++) {
+		this->data_offset_reset_flag[_channel] = 0;
+    }
+
     unsigned int _length[3];
     this->plc->copyDataToClient(this->temp, _length);
 
@@ -439,6 +536,18 @@ void ForceMonitorQt::AboutPage() {
     QMessageBox::about(this, tr("About"), tr(about_info.c_str()));
 }
 
+void ForceMonitorQt::resetCh1Offset() {
+    this->data_offset_reset_flag[0] = 1;
+}
+
+void ForceMonitorQt::resetCh2Offset() {
+    this->data_offset_reset_flag[1] = 1;
+}
+
+void ForceMonitorQt::resetCh3Offset() {
+    this->data_offset_reset_flag[2] = 1;
+}
+
 void UpdateData(ForceMonitorQt* app) {
     app->updateData();
 }
@@ -449,6 +558,20 @@ void EmitUpdateSignal(ForceMonitorQt* app) {
 
     app->updateUi();
 }
+
+/*
+void ResetCh1(ForceMonitorQt* app) {
+    app->resetCh1Offset();
+}
+
+void ResetCh2(ForceMonitorQt* app) {
+    app->resetCh2Offset();
+}
+
+void ResetCh3(ForceMonitorQt* app) {
+    app->resetCh3Offset();
+}
+*/
 
 bool checkFile(string log_file_directory, string log_file_name) {
     if (log_file_name.length() == 0) {
